@@ -1,0 +1,201 @@
+---
+title: "Random Stock Analysis"
+format: html
+editor: visual
+---
+
+## Broadcom Inc. (AVGO)
+
+```{r}
+library(quantmod)
+library(tidyverse)
+library(lubridate)
+```
+
+## Grab Data
+
+```{r}
+rm (list=ls())
+ticker <-"IBM"
+getSymbols(ticker,from="2024-01-01")
+```
+
+### Box Plot Of Closing Prices
+
+
+
+```{r}
+
+
+plot_monthly_boxplot <- function(ticker, start_date = "2024-01-01") {
+  
+  # Download data
+  getSymbols(ticker, from = start_date, auto.assign = TRUE)
+  
+  # Prepare tidy data
+  df <- get(ticker) %>%
+    fortify.zoo() %>%
+    as_tibble() %>%
+    rename(Date = Index, Close = paste0(ticker, ".Close")) %>%
+    mutate(
+      Month = floor_date(Date, "month"),
+      MonthLabel = format(Month, "%b %Y"),
+      MonthLabel = factor(MonthLabel, levels = unique(MonthLabel))
+    )
+  
+  # Compute monthly mean
+  monthly_mean <- df %>%
+    group_by(MonthLabel) %>%
+    summarize(MeanClose = mean(Close, na.rm = TRUE))
+  
+  # Plot
+  ggplot(df, aes(x = MonthLabel, y = Close)) +
+    geom_boxplot(fill = "skyblue", color = "gray20", outlier.alpha = 0.4) +
+    geom_point(
+      data = monthly_mean,
+      aes(x = MonthLabel, y = MeanClose),
+      color = "orange", size = 3
+    ) +
+    labs(
+      title = paste("Monthly Closing Price Distribution for", ticker),
+      subtitle = paste("From", start_date, "to", format(max(df$Date), "%Y-%m-%d")),
+      x = "Month",
+      y = "Closing Price ($)"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+# 🧩 Example usage
+plot_monthly_boxplot("IBM", start_date = "2025-06-01")
+```
+```
+
+
+
+
+
+
+
+
+
+
+## First Plot
+
+```{r}
+chartSeries(get(ticker),type="line", theme=chartTheme('white'),name = ticker)
+```
+
+```{r}
+chartSeries(get(ticker),type="candlesticks", 
+            theme=chartTheme('white'), 
+            subset='last 4 months',name = ticker)
+```
+```{r}
+chartSeries(get(ticker),type="matchsticks",
+            theme=chartTheme('white'), subset='last 6 months',name = ticker)
+```
+```{r}
+chartSeries(get(ticker),type="bars", 
+            theme=chartTheme('white'), subset='last 2 months',name = ticker)
+```
+
+```{r}
+chartSeries(get(ticker),
+            type="line", 
+            theme=chartTheme('white'),
+            TA="addEMA(n=100)",name = ticker)
+```
+
+```{r}
+chartSeries(get(ticker),
+            type="line", 
+            theme=chartTheme('white'),
+            TA="addRSI()",name = ticker)
+```
+
+
+```{r}
+chartSeries(get(ticker),
+            type="line", 
+            theme=chartTheme('white'),
+            TA="addMACD()",name = ticker,subset="last 4 months")
+```
+
+```{r}
+returns <- periodReturn(get(ticker),
+             period='monthly',
+             subset=NULL,
+             type='arithmetic',
+             leading=TRUE,name = ticker)
+barplot(returns)
+```
+
+```{r}
+returns <- periodReturn(get(ticker),
+             period='monthly',
+             subset=NULL,
+             type='log',
+             leading=TRUE)
+barplot(returns)
+
+
+### The Prophet Has Spoken
+
+```{r}
+library(quantmod)
+library(dplyr)
+library(lubridate)
+library(prophet)
+library(ggplot2)
+
+ticker <- "F"
+forecast_start <- as.Date("2025-10-01")
+forecast_days  <- 30
+display_start  <- as.Date("2025-06-01")
+
+getSymbols(ticker, from = "2024-01-01", auto.assign = TRUE)
+
+df <- get(ticker) %>%
+  fortify.zoo() %>%
+  as_tibble() %>%
+  rename(ds = Index, y = paste0(ticker, ".Close"))
+
+train_data <- df %>% filter(ds < forecast_start)
+
+m <- prophet(train_data)
+
+future <- make_future_dataframe(m, periods = forecast_days)
+future <- future %>% filter(ds >= forecast_start)
+
+forecast <- predict(m, future)
+recent_history <- df %>% filter(ds >= display_start)
+
+# 🧭 Plot with legend
+ggplot() +
+  geom_line(data = recent_history, aes(x = ds, y = y, color = "Historical"),linewidth=1) +
+  geom_line(data = forecast, aes(x = ds, y = yhat, color = "Forecast"),linewidth=1) +
+  geom_ribbon(
+    data = forecast,
+    aes(x = ds, ymin = yhat_lower, ymax = yhat_upper, fill = "Uncertainty"),
+    alpha = 0.2
+  ) +
+  labs(
+    title = paste("Prophet Forecast for", ticker),
+    subtitle = paste("30-Day Forecast Beginning", forecast_start),
+    x = "Date",
+    y = "Closing Price ($)",
+    color = "Series",
+    fill = "Interval"
+  ) +
+  scale_color_manual(values = c("Historical" = "darkblue", "Forecast" = "darkred")) +
+  scale_fill_manual(values = c("Uncertainty" = "orange")) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+
