@@ -2,6 +2,7 @@
 title: "Random Stock Analysis"
 format: html
 editor: visual
+toc: true
 ---
 
 ## Broadcom Inc. (AVGO)
@@ -17,11 +18,13 @@ library(ggplot2)
 
 ```
 
-## Grab Data
+### Grab Data
 
 ```{r}
+#| echo: FALSE
+#| message: FALSE
 rm (list=ls())
-ticker <-"IBM"
+ticker <-"AVGO"
 getSymbols(ticker,from="2024-01-01")
 ```
 
@@ -133,6 +136,59 @@ chartSeries(get(ticker),
             name = ticker,subset="last 4 months")
 ```
 
+### First and Last Close by Month
+
+```{r}
+library(quantmod)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+
+ticker <- "F"
+getSymbols(ticker, from = "2024-01-01", auto.assign = TRUE)
+
+df <- get(ticker) %>%
+  fortify.zoo() %>%
+  as_tibble() %>%
+  rename(Date = Index, Close = paste0(ticker, ".Close")) %>%
+  mutate(Month = floor_date(Date, "month"))
+
+# Build two points per month: first & last close
+month_points <- df %>%
+  group_by(Month) %>%
+  arrange(Date, .by_group = TRUE) %>%
+  reframe(
+    Date  = c(first(Date),  last(Date)),
+    Close = c(first(Close), last(Close)),
+    Type  = c("First", "Last")
+  ) %>%
+  ungroup()
+
+# One line per month connecting first ↔ last close, with point markers
+ggplot(month_points, aes(x = Date, y = Close, group = Month, color = factor(Month))) +
+  geom_line(size = 1) +
+  geom_point(aes(shape = Type), size = 3) +
+  scale_shape_manual(values = c(First = 16, Last = 17), name = "Point") +
+  labs(
+    title = paste("Monthly First ↔ Last Closing Prices for", ticker),
+    subtitle = "Each colored line connects the first and last close in a month",
+    x = "Date",
+    y = "Closing Price ($)",
+    color = "Month"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+
+
+
+
+
+
 ### Weekly, Monthly, Quarterly  Returns
 
 ```{r}
@@ -161,13 +217,13 @@ returns <- periodReturn(get(ticker),
 barplot(returns,main="Quartlerly Returns")
 ```
 
-### The Prophet Has Spoken
+### The Prophet Has Sposken (6 Months Data)
 
 ```{r}
 
 ticker <- "F"
-forecast_start <- as.Date("2025-10-01")
-forecast_days  <- 30
+forecast_start <- as.Date("2025-09-01")
+forecast_days  <- 60
 display_start  <- as.Date("2025-06-01")
 
 getSymbols(ticker, from = "2025-04-01", auto.assign = TRUE)
@@ -198,7 +254,7 @@ ggplot() +
   ) +
   labs(
     title = paste("Prophet Forecast for", ticker),
-    subtitle = paste("30-Day Forecast Beginning", forecast_start),
+    subtitle = paste("30-Day (6 month data) Forecast Beginning", forecast_start),
     x = "Date",
     y = "Closing Price ($)",
     color = "Series",
@@ -214,4 +270,108 @@ ggplot() +
   )
 ```
 
+### The Prophet Has Sposken (12 Months Data)
 
+```{r}
+
+ticker <- "F"
+forecast_start <- as.Date("2025-09-01")
+forecast_days  <- 60
+display_start  <- as.Date("2025-06-01")
+
+getSymbols(ticker, from = "2024-10-24", auto.assign = TRUE)
+
+df <- get(ticker) %>%
+  fortify.zoo() %>%
+  as_tibble() %>%
+  rename(ds = Index, y = paste0(ticker, ".Close"))
+
+train_data <- df %>% filter(ds < forecast_start)
+
+m <- prophet(train_data)
+
+future <- make_future_dataframe(m, periods = forecast_days)
+future <- future %>% filter(ds >= forecast_start)
+
+forecast <- predict(m, future)
+recent_history <- df %>% filter(ds >= display_start)
+
+# 🧭 Plot with legend
+ggplot() +
+  geom_line(data = recent_history, aes(x = ds, y = y, color = "Historical"),linewidth=1) +
+  geom_line(data = forecast, aes(x = ds, y = yhat, color = "Forecast"),linewidth=1) +
+  geom_ribbon(
+    data = forecast,
+    aes(x = ds, ymin = yhat_lower, ymax = yhat_upper, fill = "Uncertainty"),
+    alpha = 0.2
+  ) +
+  labs(
+    title = paste("Prophet Forecast for", ticker),
+    subtitle = paste("30-Day(12 months data) Forecast Beginning", forecast_start),
+    x = "Date",
+    y = "Closing Price ($)",
+    color = "Series",
+    fill = "Interval"
+  ) +
+  scale_color_manual(values = c("Historical" = "darkblue", "Forecast" = "darkred")) +
+  scale_fill_manual(values = c("Uncertainty" = "orange")) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+### The Prophet Has Sposken (24 Months Data)
+
+```{r}
+
+ticker <- "F"
+forecast_start <- as.Date("2025-09-01")
+forecast_days  <- 60
+display_start  <- as.Date("2025-06-01")
+
+getSymbols(ticker, from = "2023-10-24", auto.assign = TRUE)
+
+df <- get(ticker) %>%
+  fortify.zoo() %>%
+  as_tibble() %>%
+  rename(ds = Index, y = paste0(ticker, ".Close"))
+
+train_data <- df %>% filter(ds < forecast_start)
+
+m <- prophet(train_data)
+
+future <- make_future_dataframe(m, periods = forecast_days)
+future <- future %>% filter(ds >= forecast_start)
+
+forecast <- predict(m, future)
+recent_history <- df %>% filter(ds >= display_start)
+
+# 🧭 Plot with legend
+ggplot() +
+  geom_line(data = recent_history, aes(x = ds, y = y, color = "Historical"),linewidth=1) +
+  geom_line(data = forecast, aes(x = ds, y = yhat, color = "Forecast"),linewidth=1) +
+  geom_ribbon(
+    data = forecast,
+    aes(x = ds, ymin = yhat_lower, ymax = yhat_upper, fill = "Uncertainty"),
+    alpha = 0.2
+  ) +
+  labs(
+    title = paste("Prophet Forecast for", ticker),
+    subtitle = paste("30-Day (24 months data) Forecast Beginning", forecast_start),
+    x = "Date",
+    y = "Closing Price ($)",
+    color = "Series",
+    fill = "Interval"
+  ) +
+  scale_color_manual(values = c("Historical" = "darkblue", "Forecast" = "darkred")) +
+  scale_fill_manual(values = c("Uncertainty" = "orange")) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
