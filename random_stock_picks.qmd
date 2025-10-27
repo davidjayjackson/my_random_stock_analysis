@@ -27,10 +27,7 @@ getSymbols(ticker,from="2024-01-01")
 
 ### Box Plot Of Closing Prices
 
-
-
 ```{r}
-
 
 plot_monthly_boxplot <- function(ticker, start_date = "2024-01-01") {
   
@@ -74,36 +71,41 @@ plot_monthly_boxplot <- function(ticker, start_date = "2024-01-01") {
 # 🧩 Example usage
 plot_monthly_boxplot("IBM", start_date = "2025-06-01")
 ```
-```
 
-
-
-
-
-
-
-
-
-
-## First Plot
+### Closing Price and Volume
 
 ```{r}
-chartSeries(get(ticker),type="line", theme=chartTheme('white'),name = ticker)
+chartSeries(get(ticker),
+  type="line", 
+  theme=chartTheme('white'),
+  name = ticker)
 ```
+
+### Candlesticks
 
 ```{r}
 chartSeries(get(ticker),type="candlesticks", 
             theme=chartTheme('white'), 
             subset='last 4 months',name = ticker)
 ```
+
+### Matchsticks
+
 ```{r}
 chartSeries(get(ticker),type="matchsticks",
-            theme=chartTheme('white'), subset='last 6 months',name = ticker)
+            theme=chartTheme('white'), 
+            subset='last 6 months',name = ticker)
 ```
+
+### Barplot
+
 ```{r}
 chartSeries(get(ticker),type="bars", 
-            theme=chartTheme('white'), subset='last 2 months',name = ticker)
+            theme=chartTheme('white'), 
+            subset='last 2 months',name = ticker)
 ```
+
+### 100 Day Moving Average
 
 ```{r}
 chartSeries(get(ticker),
@@ -112,6 +114,8 @@ chartSeries(get(ticker),
             TA="addEMA(n=100)",name = ticker)
 ```
 
+# RSI Plot
+
 ```{r}
 chartSeries(get(ticker),
             type="line", 
@@ -119,17 +123,21 @@ chartSeries(get(ticker),
             TA="addRSI()",name = ticker)
 ```
 
+### MACD Plot
 
 ```{r}
 chartSeries(get(ticker),
             type="line", 
             theme=chartTheme('white'),
-            TA="addMACD()",name = ticker,subset="last 4 months")
+            TA="addMACD()",
+            name = ticker,subset="last 4 months")
 ```
+
+### Weekly, Monthly, Quarterly  Returns
 
 ```{r}
 returns <- periodReturn(get(ticker),
-             period='monthly',
+             period='weekly',
              subset=NULL,
              type='arithmetic',
              leading=TRUE,name = ticker)
@@ -143,7 +151,15 @@ returns <- periodReturn(get(ticker),
              type='log',
              leading=TRUE)
 barplot(returns)
-
+```
+```{r}
+returns <- periodReturn(get(ticker),
+             period='quarterly',
+             subset=NULL,
+             type='log',
+             leading=TRUE)
+barplot(returns)
+```
 
 ### The Prophet Has Spoken
 
@@ -154,7 +170,7 @@ forecast_start <- as.Date("2025-10-01")
 forecast_days  <- 30
 display_start  <- as.Date("2025-06-01")
 
-getSymbols(ticker, from = "2024-01-01", auto.assign = TRUE)
+getSymbols(ticker, from = "2023-01-01", auto.assign = TRUE)
 
 df <- get(ticker) %>%
   fortify.zoo() %>%
