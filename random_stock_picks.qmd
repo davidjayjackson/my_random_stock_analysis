@@ -6,7 +6,7 @@ editor: visual
 
 ## Broadcom Inc. (AVGO)
 
-```{r}
+```{r, message=FALSE, error=FALSE}
 library(quantmod)
 library(tidyverse)
 library(lubridate)
@@ -141,7 +141,7 @@ returns <- periodReturn(get(ticker),
              subset=NULL,
              type='arithmetic',
              leading=TRUE,name = ticker)
-barplot(returns)
+barplot(returns,main="Weekly Returns")
 ```
 
 ```{r}
@@ -150,7 +150,7 @@ returns <- periodReturn(get(ticker),
              subset=NULL,
              type='log',
              leading=TRUE)
-barplot(returns)
+barplot(returns,main="Monthly Returns")
 ```
 ```{r}
 returns <- periodReturn(get(ticker),
@@ -158,7 +158,7 @@ returns <- periodReturn(get(ticker),
              subset=NULL,
              type='log',
              leading=TRUE)
-barplot(returns)
+barplot(returns,main="Quartlerly Returns")
 ```
 
 ### The Prophet Has Spoken
@@ -170,7 +170,7 @@ forecast_start <- as.Date("2025-10-01")
 forecast_days  <- 30
 display_start  <- as.Date("2025-06-01")
 
-getSymbols(ticker, from = "2023-01-01", auto.assign = TRUE)
+getSymbols(ticker, from = "2025-04-01", auto.assign = TRUE)
 
 df <- get(ticker) %>%
   fortify.zoo() %>%
