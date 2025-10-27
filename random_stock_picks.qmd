@@ -10,6 +10,11 @@ editor: visual
 library(quantmod)
 library(tidyverse)
 library(lubridate)
+library(quantmod)
+library(dplyr)
+library(prophet)
+library(ggplot2)
+
 ```
 
 ## Grab Data
@@ -143,11 +148,6 @@ barplot(returns)
 ### The Prophet Has Spoken
 
 ```{r}
-library(quantmod)
-library(dplyr)
-library(lubridate)
-library(prophet)
-library(ggplot2)
 
 ticker <- "F"
 forecast_start <- as.Date("2025-10-01")
